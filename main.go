@@ -12,13 +12,14 @@ import (
 func main() {
 	router := mux.NewRouter()
 
-	router.HandleFunc("/busStops", getBusStopsInfo).Methods("GET")
+	router.HandleFunc("/busStop", getBusStopsInfo).Methods("GET")
+	router.HandleFunc("/busStop/urban/{id}", getUrbanBusStopInfo).Methods("GET")
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
 
-// getBusStopsInfo Gets all the information for a specific bus stop
-func getBusStopsInfo(responseWriter http.ResponseWriter, r *http.Request) {
-	//responseWriter.Header().Set("Accept", "application/json")
+// getBusStopsInfo Gets all the information for busStops
+func getBusStopsInfo(w http.ResponseWriter, r *http.Request) {
+	// FIXME The whole function needs to be fixed
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", "https://www.zaragoza.es/sede/servicio/urbanismo-infraestructuras/transporte-urbano/poste-autobus?rf=html&srsname=wgs84&start=0&rows=50&distance=500", nil)
 	request.Header.Add("Accept", "application/json")
@@ -30,4 +31,25 @@ func getBusStopsInfo(responseWriter http.ResponseWriter, r *http.Request) {
 	defer resp.Body.Close()
 	a, _ := ioutil.ReadAll(resp.Body)
 	fmt.Printf("%s", a)
+}
+
+// getUrbanBusStopInfo Gets all the information for a specific urban bus stop
+func getUrbanBusStopInfo(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	client := &http.Client{}
+	request, err := http.NewRequest("GET", "https://www.zaragoza.es/sede/servicio/urbanismo-infraestructuras/transporte-urbano/poste-autobus/tuzsa-" + params["id"] + "?rf=html&srsname=wgs84", nil)
+	request.Header.Add("Accept", "application/json")
+	resp, err := client.Do(request)
+	if err != nil {
+		fmt.Println("fail!")
+		return
+	}
+	defer resp.Body.Close()
+	a, _ := ioutil.ReadAll(resp.Body)
+	fmt.Printf("%s", a)
+
+	// Write results
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(a)
 }
